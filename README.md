@@ -1,17 +1,36 @@
-# Scetch
+# Scetch — Flutter Camera Tracing & Drawing App
 
-Локальная студия для срисовывания: импорт фотографии, подготовка изображения и управляемый референс поверх камеры. Без регистрации, backend и аналитики. Phase 2 не входит в проект.
+**English** | [Русский](README.ru.md) | [Тоҷикӣ](README.tg.md)
 
-## Требования
+Scetch is a local-first **camera tracing app for Android and iOS**, built with Flutter. Import a photo, prepare a sketch or outline, and overlay the reference image on a live camera preview to draw on paper. Adjust opacity, position, scale and rotation, then lock the reference and draw by hand.
 
-- Flutter **3.47.4 stable**, Dart **3.13.3** — версия из официального манифеста на 13 сентября 2026 года.
-- Android: JDK 17, Android SDK, устройство API 24+; compile/target SDK определяются Flutter.
-- iOS: macOS, совместимый с Flutter Xcode, CocoaPods; deployment target 13.0. Windows не собирает iOS.
-- Реальное устройство для проверки камеры, фонарика, разрешений и производительности.
+No account, backend or analytics. Images stay on your device. Scetch uses a screen overlay; it does not provide AR world tracking. Phase 2 is outside the current scope.
 
-Источники: [Flutter SDK archive](https://docs.flutter.dev/install/archive), [camera](https://pub.dev/packages/camera), [image_picker](https://pub.dev/packages/image_picker), [Drift](https://drift.simonbinder.eu/).
+**Project status:** Phase 1 source code is implemented, but production readiness has **not** been verified. Freezed/Drift code generation, golden baselines, Flutter analysis, tests and native builds still need to be completed. See [validation status](VALIDATION.md) for the recorded checks and limitations.
 
-## Запуск
+## Features
+
+- Import photos with the system image picker and normalize EXIF orientation.
+- Crop, rotate, mirror and reset images.
+- Prepare Original, Grayscale, High Contrast, Outline or Sketch references.
+- Adjust brightness, contrast, smoothing, details, edge strength and line width.
+- Trace over a live camera preview with opacity, pan, pinch zoom, rotation and two-axis mirroring.
+- Lock the reference; hold the button to unlock it.
+- Use screen-bound or reference-bound grids and adjustable blink comparison.
+- Control camera zoom, focus, exposure and flashlight where supported.
+- Save drawing projects locally with Drift/SQLite and reopen them later.
+- Choose a light, dark or system theme.
+
+## Requirements
+
+- **Flutter 3.47.4 stable / Dart 3.13.3**, selected from the official release manifest on September 13, 2026.
+- **Android:** JDK 17, Android SDK and an API 24+ device. Flutter determines compile/target SDK versions.
+- **iOS:** macOS, Flutter-compatible Xcode and CocoaPods. Deployment target: iOS 13.0. Windows cannot build iOS applications.
+- A physical device to validate camera behavior, flashlight, permissions and performance.
+
+References: [Flutter SDK archive](https://docs.flutter.dev/install/archive), [camera plugin](https://pub.dev/packages/camera), [image_picker](https://pub.dev/packages/image_picker), [Drift documentation](https://drift.simonbinder.eu/).
+
+## Getting started
 
 ```sh
 flutter --version
@@ -20,28 +39,28 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
-Freezed, JSON и Drift используют генерацию кода. Запускайте build_runner после изменения моделей или таблиц. `pubspec.lock` фиксируется после успешного разрешения зависимостей; не используйте непроверенное обновление пакетов в релизе.
+Freezed, JSON serialization and Drift require generated code. Run build_runner after changing models or database tables. Commit `pubspec.lock` after successfully resolving dependencies; verify dependency updates before shipping a release.
 
-Если Gradle wrapper ещё не создан инструментами Flutter:
+If Flutter tooling has not yet created the Gradle wrapper:
 
 ```sh
 flutter create --empty --platforms=android,ios --org com.scetch --project-name scetch --no-pub .
 ```
 
-Не используйте `--overwrite`: нативные настройки приватности и разрешений уже находятся в репозитории.
+Do not add `--overwrite`: the repository already contains native privacy and permission settings.
 
-## Android
+## Android setup
 
-Установите Android SDK и JDK, выполните `flutter doctor -v` и `flutter doctor --android-licenses`. `android/local.properties` создаётся Flutter и не хранится в репозитории. Для проверки:
+Install Android SDK and JDK, then run `flutter doctor -v` and `flutter doctor --android-licenses`. Flutter creates `android/local.properties`; this machine-specific file is not committed.
 
 ```sh
 flutter build apk --debug
 flutter run -d <device-id>
 ```
 
-Release signing нужно настроить собственным keystore перед распространением. Приложение запрашивает только камеру; галерея открывается через системный picker. В release-манифесте отсутствует INTERNET. Разрешение INTERNET в debug/profile нужно для Flutter tooling. Cloud backup и device transfer исключены настройками приложения.
+Configure release signing with your own keystore before distribution. The app requests camera access and opens the gallery through the system picker. The release manifest has no INTERNET permission; debug/profile manifests include it for Flutter tooling. App settings exclude cloud backup and device transfer.
 
-## iOS
+## iOS setup
 
 ```sh
 flutter pub get
@@ -52,41 +71,47 @@ flutter build ios --no-codesign
 open ios/Runner.xcworkspace
 ```
 
-Выберите собственный bundle identifier и signing team в Xcode. Включены usage descriptions камеры и библиотеки фотографий, scene lifecycle и `PERMISSION_CAMERA=1`. Аудиозапись выключена, доступ к микрофону не запрашивается. AppDelegate исключает Application Support из iCloud backup. Privacy manifest не заявляет сбор данных; required-reason API manifests зависимостей проверяются в собранном архиве перед публикацией.
+Set your own bundle identifier and signing team in Xcode. Camera/photo-library usage descriptions, scene lifecycle configuration and `PERMISSION_CAMERA=1` are included. Audio recording is disabled, and microphone access is not requested.
 
-## Использование
+AppDelegate excludes Application Support from iCloud backup. The app's privacy manifest declares no data collection. Review dependencies' required-reason API manifests in the built archive before publishing.
 
-1. New Drawing / Import From Gallery — системный выбор изображения.
-2. Crop: горизонтальные и вертикальные границы; затем rotate/mirror/reset.
-3. Image Preparation: Original, Grayscale, High Contrast, Outline, Sketch. Последние два режима дают линии на прозрачном фоне. Настройки details, edge strength и line width доступны для этих режимов.
-4. Start tracing — pan, pinch и rotation. Double tap по preview ставит focus/exposure point, если камера поддерживает их.
-5. Кнопки управления: прозрачность, обе оси отражения, center, fit, reset, grid, blink, flashlight, zoom и exposure.
-6. Lock reference скрывает инструменты и блокирует transform/grid. Для разблокировки удерживайте кнопку. Системная кнопка «Назад» в locked mode также требует разблокировки.
+## How to trace a drawing
 
-Трансформации сохраняются с debounce 300 мс, при уходе в фон и при выходе. При ошибке сохранения показан Retry; выход со страницы не теряет несохранённые изменения молча. Recent Projects и Projects восстанавливают работу из SQLite.
+1. Select **New Drawing** or **Import From Gallery** to choose a reference image.
+2. Set horizontal and vertical crop bounds, then rotate, mirror or reset.
+3. Open **Image Preparation** and select Original, Grayscale, High Contrast, Outline or Sketch. Outline and Sketch produce lines on a transparent background; details, edge strength and line width controls are available in those modes.
+4. Select **Start tracing**. Pan, pinch and rotate the reference. Double-tap the preview to set focus/exposure points if the camera supports them.
+5. Adjust opacity, horizontal/vertical mirror, center, fit, reset, grid, blink, flashlight, camera zoom and exposure.
+6. Select **Lock reference** to hide the main controls and prevent transform/grid changes. Hold the button to unlock. The system Back action also requires unlocking first.
 
-## Архитектура
+Secure the phone on a stable stand above your paper. Look through the screen and draw by hand.
 
-`lib/app` — bootstrap, Riverpod composition root, router и темы.
+Transforms save after a 300 ms debounce, when the app enters the background, and on exit. Save failures show Retry; leaving the screen requires a successful save. Recent Projects and Projects restore drawings from SQLite.
 
-`lib/core` — камера, координаты, CV, файлы, Drift, permissions, failures, logging и лимиты кэша.
+## Architecture
 
-`lib/features` — home, projects, import_image, image_editor, tracing, settings, onboarding. Слои data/domain/presentation выделены там, где есть соответствующая ответственность. Пустые repository/use-case слои для статических экранов намеренно не создаются.
+The app uses a feature-first structure, immutable Freezed models, Riverpod 3, go_router, the official camera/image_picker plugins and Drift/SQLite.
 
-`lib/shared/widgets` — общие элементы управления и ошибки.
+| Directory | Responsibility |
+|---|---|
+| `lib/app` | Bootstrap, Riverpod composition root, routing and themes |
+| `lib/core` | Camera, coordinates, image processing, files, Drift, permissions, failures, logging and cache limits |
+| `lib/features` | Home, projects, image import, editor, tracing, settings and onboarding |
+| `lib/shared/widgets` | Shared controls and error presentation |
 
-- Доменные Freezed-модели immutable. Repository отделяет хранение проектов от UI.
-- Drift хранит versioned schema и JSON-снимок проекта; изображения лежат отдельными файлами. Пути относительны к Application Support, поэтому смена абсолютного пути iOS sandbox не ломает проекты.
-- `ImageProcessor` — точка замены реализации. Phase 1 использует пакет `image` в Dart isolate. OpenCV не подключён и не импортируется в UI; нативный adapter может реализовать тот же контракт.
-- Декодирование, EXIF normalization, crop, фильтры и кодирование происходят в isolate. До фильтров длинная сторона уменьшается до 1600 px. Вход ограничен 40 MiB и 48 MP; полное декодирование исходника всё ещё требует памяти, что проверяется на минимальном целевом устройстве.
-- Кэш обработанных изображений ограничен 96 MiB; decoded Flutter cache — 64 MiB. Сохранённые processed images копируются из временного кэша в проект. Старые preview очищаются после сохранения новой версии.
-- `TraceTransform` содержит единую матрицу: fit → scale/rotation/mirror → normalized translation. Gesture anchor удерживает выбранную точку референса под пальцами.
-- `CameraCoordinateMapper` учитывает cover/contain, sensor/device rotation, front mirror и physical/logical pixels. CameraPreview и focus используют одинаковую геометрию crop. Это экранный overlay, не AR world tracking: телефон должен стоять неподвижно.
-- `CameraSession` сериализует native operations и dispose. Generation token запрещает публикацию устаревшего контроллера после ухода с экрана.
-- Blink управляет render opacity через AnimationController/FadeTransition. Layout и декодирование изображения не запускаются на каждую смену видимости.
-- Логи с техническими деталями доступны только вне release. Изображения и пользовательские имена не отправляются наружу.
+Data/domain/presentation layers have concrete responsibilities. Static screens do not have empty repository or use-case layers.
 
-## Проверки
+- **Persistence:** a repository separates storage from UI. Drift stores a versioned schema and a JSON project snapshot; images are separate files. Paths are relative to Application Support so an iOS sandbox path change does not break projects.
+- **Image processing:** `ImageProcessor` is the replaceable processing contract. Phase 1 uses the Dart `image` package in an isolate. OpenCV is not included or imported by UI; a native adapter can implement the same contract.
+- **Memory:** decoding, EXIF normalization, cropping, filtering and encoding run in an isolate. The longest image side is reduced to 1600 px before filtering. Input limits are 40 MiB and 48 MP. Full source decoding still consumes memory and must be validated on the minimum target device.
+- **Caching:** processed-image cache is capped at 96 MiB; Flutter's decoded-image cache at 64 MiB. Saved processed images are copied into the project directory. Old previews are removed after saving a new version.
+- **Transforms:** `TraceTransform` provides one matrix for fit, scale, rotation, mirroring and normalized translation. The gesture anchor keeps the touched reference point beneath the user's fingers.
+- **Coordinates:** `CameraCoordinateMapper` accounts for cover/contain, sensor/device rotation, front-camera mirroring and physical/logical pixels. CameraPreview and focus share crop geometry. This is a screen reference, not AR world tracking; keep the phone stationary.
+- **Camera lifecycle:** `CameraSession` serializes native operations and disposal. A generation token prevents publishing an outdated controller after leaving the screen.
+- **Blink:** AnimationController/FadeTransition changes render opacity without repeating layout or image decoding on every visibility change.
+- **Privacy:** technical logging is limited to non-release builds. Images and user-provided names are not sent to external services.
+
+## Testing and validation
 
 ```sh
 dart format lib test integration_test
@@ -94,45 +119,47 @@ flutter analyze --fatal-infos
 flutter test --coverage
 flutter test integration_test -d <device-id>
 flutter build apk --debug
-# Только macOS:
+# macOS only:
 flutter build ios --no-codesign
 ```
 
-PowerShell: `./tool/verify.ps1`. Unix/macOS: `bash tool/verify.sh` или `bash tool/verify.sh ios`.
+PowerShell: `./tool/verify.ps1`. Unix/macOS: `bash tool/verify.sh` or `bash tool/verify.sh ios`.
 
-Unit tests покрывают transform, focal anchor, координаты, opacity, lock, JSON settings, обработку изображений, content cache и восстановление SQLite после закрытия. Camera lifecycle test моделирует уход с экрана во время initialize. Widget tests проверяют slider и golden сетки. Integration test проходит onboarding, home, projects и settings на устройстве.
+Test sources cover transforms, focal anchors, coordinate mapping, opacity, lock state, JSON settings, image processing, content caching and SQLite restoration after closing the database. A camera lifecycle test simulates leaving during initialization. Widget tests cover controls and lock behavior; golden tests target light/dark Home and the reference grid. The integration test navigates onboarding, Home, Projects and Settings on a device. These Flutter tests have not yet been executed in the recorded environment.
 
-Golden baseline создаётся и визуально проверяется на закреплённом Flutter/OS:
+Create and visually review golden baselines on a pinned Flutter/OS combination:
 
 ```sh
 flutter test --tags golden --update-goldens
 flutter test --tags golden
 ```
 
-Не обновляйте baseline автоматически в CI. До первого подтверждённого baseline остальные тесты можно диагностически запускать с `--exclude-tags golden`; это не эквивалент полной проверке.
+Do not automatically update baselines in CI. Before the first reviewed baseline exists, `--exclude-tags golden` can help diagnose other tests, but it does not constitute a full test pass.
 
-`python tool/verify_structure.py` проверяет XML/plist/assets, ссылки Xcode, относительные Dart imports и Android release network/backup policy. Это отдельная статическая проверка, не замена сборке.
+`python tool/verify_structure.py` checks XML/plist/assets, Xcode references, relative Dart imports and Android release network/backup settings. It is a static check, not a native build.
 
-Актуальный статус выполненных проверок и оставшихся ограничений: [VALIDATION.md](VALIDATION.md).
+**Recorded verification:** the source was formatted using a WASM port of dart_style, parsed without syntax errors, and checked for native structure consistency. Flutter analysis, code generation, tests and builds remain unverified because SDK installation failed in the available environment. Golden baseline PNGs and generated Freezed/Drift files are still missing. Full details: [VALIDATION.md](VALIDATION.md) (Russian).
 
-## Проверка на устройствах перед релизом
+## Device checks before release
 
-- Разрешить / отклонить / отклонить навсегда; вернуться из Settings.
-- Быстро открыть/закрыть tracing, свернуть при запросе разрешения и во время initialization, повторить foreground/background.
-- Portrait/landscape, задняя камера с sensor 90/270, различные aspect ratio, экран с большим размером текста.
-- Закрепить телефон, проверить фокус по краям cover preview и устойчивость overlay при rotation/pinch/mirror.
-- Перезапустить приложение после редактирования, lock, grid и opacity; сравнить восстановленный проект.
-- 12/48 MP JPEG с EXIF, PNG/WebP, повреждённый файл, недостаток места, interrupted Android picker.
-- Profile на минимальном устройстве: Flutter DevTools frame chart, p95 frame time, memory, 20 минут tracing/blink. 60 FPS — критерий приёмки, а не заявленное измерение.
+- Allow, deny and permanently deny permission; return from system Settings.
+- Open/close tracing quickly, background the app during permission requests and initialization, and repeat foreground/background transitions.
+- Test portrait/landscape, rear cameras with 90°/270° sensor orientation, different aspect ratios and large text settings.
+- Secure the phone; check focus near cropped preview edges and overlay behavior during rotation, pinch and mirroring.
+- Restart after editing, locking, changing grids and opacity; compare the restored project.
+- Test 12/48 MP JPEGs with EXIF, PNG/WebP, corrupt files, low disk space and an interrupted Android picker.
+- Profile the minimum target device using Flutter DevTools: frame chart, p95 frame time, memory and 20 minutes of tracing/blink. **60 FPS is an acceptance target, not a measured result.**
 
 ## Troubleshooting
 
-- `Target of URI hasn't been generated`: выполните build_runner.
-- `Camera permission required`: Retry или Open Settings; ограничения родительского контроля снимаются вне приложения.
-- `Camera unavailable`: закройте другое приложение камеры; используйте физическое устройство.
-- `Unsupported format`: выберите JPEG, PNG или WebP. HEIC не поддерживается Dart processor напрямую; если системный picker не преобразовал файл, экспортируйте JPEG.
-- `Processing failed`: попробуйте меньший файл, проверьте свободное место.
-- Пустые/неработающие тесты на Windows: проверьте загрузку Flutter test engine и нативной SQLite library через `flutter pub get`.
-- Проблемы CocoaPods: запускайте из macOS после `flutter pub get`, открывайте `.xcworkspace`.
+| Issue | Suggested action |
+|---|---|
+| `Target of URI hasn't been generated` | Run build_runner. |
+| `Camera permission required` | Retry or open Settings. Parental restrictions must be changed outside the app. |
+| `Camera unavailable` | Close other camera apps and use a physical device. |
+| `Unsupported format` | Choose JPEG, PNG or WebP. The Dart processor does not directly support HEIC; export JPEG if the system picker did not convert it. |
+| `Processing failed` | Try a smaller file and check available storage. |
+| Tests fail to start on Windows | Check that Flutter's test engine and the native SQLite library were downloaded during SDK/package setup. |
+| CocoaPods issues | Run on macOS after `flutter pub get` and open the `.xcworkspace`. |
 
-Удаление приложения удаляет локальные проекты. Экспорт/синхронизация не входят в Phase 1.
+Uninstalling the app removes local projects. Export and synchronization are outside Phase 1.
